@@ -7,11 +7,11 @@ class Model(object):
   def __init__(self, user_count, item_count, cate_count, cate_list, predict_batch_size, predict_ads_num):
 
     self.u = tf.placeholder(tf.int32, [None,]) # [B]
-    self.i = tf.placeholder(tf.int32, [None,]) # [B]
-    self.j = tf.placeholder(tf.int32, [None,]) # [B]
+    self.i = tf.placeholder(tf.int32, [None,]) # [B] ### True pred item
+    self.j = tf.placeholder(tf.int32, [None,]) # [B] ### False pred item
     self.y = tf.placeholder(tf.float32, [None,]) # [B]
-    self.hist_i = tf.placeholder(tf.int32, [None, None]) # [B, T]
-    self.sl = tf.placeholder(tf.int32, [None,]) # [B]
+    self.hist_i = tf.placeholder(tf.int32, [None, None]) # [B, T] ### matrix: history items
+    self.sl = tf.placeholder(tf.int32, [None,]) # [B] ### history length 
     self.lr = tf.placeholder(tf.float64, [])
 
     hidden_units = 128
@@ -23,11 +23,11 @@ class Model(object):
     cate_emb_w = tf.get_variable("cate_emb_w", [cate_count, hidden_units // 2])
     cate_list = tf.convert_to_tensor(cate_list, dtype=tf.int64)
 
-    ic = tf.gather(cate_list, self.i)
+    ic = tf.gather(cate_list, self.i) ### 获得当前item的category
     i_emb = tf.concat(values = [
         tf.nn.embedding_lookup(item_emb_w, self.i),
         tf.nn.embedding_lookup(cate_emb_w, ic),
-        ], axis=1)
+        ], axis=1) ### 把category embedding 加在item embedding 最后
     i_b = tf.gather(item_b, self.i)
 
     jc = tf.gather(cate_list, self.j)
@@ -60,12 +60,12 @@ class Model(object):
     hist_j = tf.layers.dense(hist_j, hidden_units, name='hist_fcn', reuse=True)
 
     u_emb_j = hist_j
-    print u_emb_i.get_shape().as_list()
-    print u_emb_j.get_shape().as_list()
-    print i_emb.get_shape().as_list()
-    print j_emb.get_shape().as_list()
+    print("History Embedding with True attention: ", u_emb_i.get_shape().as_list())
+    print("History Embedding with False attention: ", u_emb_j.get_shape().as_list())
+    print("True Pred Embedding: ", i_emb.get_shape().as_list())
+    print("False Pred Embedding: ", j_emb.get_shape().as_list())
     #-- fcn begin -------
-    din_i = tf.concat([u_emb_i, i_emb], axis=-1)
+    din_i = tf.concat([u_emb_i, i_emb], axis=-1) ### Attentioned True + True
     din_i = tf.layers.batch_normalization(inputs=din_i, name='b1')
     d_layer_1_i = tf.layers.dense(din_i, 80, activation=tf.nn.sigmoid, name='f1')
     #if u want try dice change sigmoid to None and add dice layer like following two lines. You can also find model_dice.py in this folder.
@@ -75,7 +75,8 @@ class Model(object):
     d_layer_2_i = tf.layers.dense(d_layer_1_i, 40, activation=tf.nn.sigmoid, name='f2')
     #d_layer_2_i = dice(d_layer_2_i, name='dice_2')
     d_layer_3_i = tf.layers.dense(d_layer_2_i, 1, activation=None, name='f3')
-    din_j = tf.concat([u_emb_j, j_emb], axis=-1)
+    
+    din_j = tf.concat([u_emb_j, j_emb], axis=-1) ### Attentioned False + False
     din_j = tf.layers.batch_normalization(inputs=din_j, name='b1', reuse=True)
     d_layer_1_j = tf.layers.dense(din_j, 80, activation=tf.nn.sigmoid, name='f1', reuse=True)
     # d_layer_1_j = tf.layers.dense(din_j, 80, activation=None, name='f1', reuse=True)
@@ -86,7 +87,7 @@ class Model(object):
     d_layer_3_j = tf.layers.dense(d_layer_2_j, 1, activation=None, name='f3', reuse=True)
     d_layer_3_i = tf.reshape(d_layer_3_i, [-1])
     d_layer_3_j = tf.reshape(d_layer_3_j, [-1])
-    x = i_b - j_b + d_layer_3_i - d_layer_3_j # [B]
+    x = i_b - j_b + d_layer_3_i - d_layer_3_j # [B] ####???
     self.logits = i_b + d_layer_3_i
     
     # prediciton for selected items
@@ -127,7 +128,7 @@ class Model(object):
     self.score_i = tf.reshape(self.score_i, [-1, 1])
     self.score_j = tf.reshape(self.score_j, [-1, 1])
     self.p_and_n = tf.concat([self.score_i, self.score_j], axis=-1)
-    print self.p_and_n.get_shape().as_list()
+    print(self.p_and_n.get_shape().as_list())
 
 
     # Step variable
@@ -266,5 +267,5 @@ def attention_multi_items(queries, keys, keys_length):
   # Weighted sum
   outputs = tf.matmul(outputs, keys)
   outputs = tf.reshape(outputs, [-1, queries_nums, queries_hidden_units])  # [B, N, 1, H]
-  print outputs.get_shape().as_list()
+  print(outputs.get_shape().as_list())
   return outputs

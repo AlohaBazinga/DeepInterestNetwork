@@ -13,7 +13,7 @@ class DataInput:
   def __iter__(self):
     return self
 
-  def next(self):
+  def __next__(self):
 
     if self.i == self.epoch_size:
       raise StopIteration
@@ -53,22 +53,22 @@ class DataInputTest:
   def __iter__(self):
     return self
 
-  def next(self):
+  def __next__(self):
 
     if self.i == self.epoch_size:
       raise StopIteration
 
     ts = self.data[self.i * self.batch_size : min((self.i+1) * self.batch_size,
-                                                  len(self.data))]
+                                                  len(self.data))] ### 获得一个batch_size 的数据， test_set: [(0, [13179, 17993, 28326, 29247], (62275, 53945))]
     self.i += 1
 
     u, i, j, sl = [], [], [], []
     for t in ts:
-      u.append(t[0])
-      i.append(t[2][0])
-      j.append(t[2][1])
-      sl.append(len(t[1]))
-    max_sl = max(sl)
+      u.append(t[0]) ### User id
+      i.append(t[2][0]) ### To be predicted, true item id
+      j.append(t[2][1]) ### To be predicted, false item id
+      sl.append(len(t[1])) ### history length
+    max_sl = max(sl) ### max history length
 
     hist_i = np.zeros([len(ts), max_sl], np.int64)
 

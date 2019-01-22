@@ -28,6 +28,22 @@ for reviewerID, hist in reviews_df.groupby('reviewerID'):
       label = (pos_list[i], neg_list[i])
       test_set.append((reviewerID, hist, label))
 
+"""
+For User 0, with review history: [13179, 17993, 28326, 29247, 62275]
+构造训练集：
+
+train_set: 
+[(0, [13179], 17993, 1),
+ (0, [13179], 44276, 0),
+ (0, [13179, 17993], 28326, 1),
+ (0, [13179, 17993], 9894, 0),
+ (0, [13179, 17993, 28326], 29247, 1),
+ (0, [13179, 17993, 28326], 26707, 0)]
+ 
+test_set:
+[(0, [13179, 17993, 28326, 29247], (62275, 53945))]
+
+"""
 random.shuffle(train_set)
 random.shuffle(test_set)
 

@@ -6,7 +6,7 @@ def to_df(file_path):
     df = {}
     i = 0
     for line in fin:
-      df[i] = eval(line)
+      df[i] = eval(line) ## eval(a string dict) ==> extract the dict
       i += 1
     df = pd.DataFrame.from_dict(df, orient='index')
     return df
