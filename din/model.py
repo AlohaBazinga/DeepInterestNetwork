@@ -144,10 +144,10 @@ class Model(object):
             labels=self.y)
         )
 
-    trainable_params = tf.trainable_variables()
+    trainable_params = tf.trainable_variables() ### 找到所有可trainable的变量
     self.opt = tf.train.GradientDescentOptimizer(learning_rate=self.lr)
     gradients = tf.gradients(self.loss, trainable_params)
-    clip_gradients, _ = tf.clip_by_global_norm(gradients, 5)
+    clip_gradients, _ = tf.clip_by_global_norm(gradients, 5) ###
     self.train_op = self.opt.apply_gradients(
         zip(clip_gradients, trainable_params), global_step=self.global_step)
 
